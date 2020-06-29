@@ -1,0 +1,354 @@
+<template>
+  <div style="height: 100%;width: 100%;">
+    <div class="about">
+      <svg id="hot" width="100%" height="100%" />
+    </div>
+    <div class="fixed">
+      盒子长：
+      <input type="text" v-model="boxWidth" />
+      <br />盒子高：
+      <input type="text" v-model="boxHeight" />
+      <el-tree :data="flowData" node-key="id" default-expand-all :expand-on-click-node="false">
+        <span class="custom-tree-node" slot-scope="{ node, data }">
+          <span>
+            <input type="text" v-model="data.name" />
+            id:
+            <input type="text" v-model="data.id" />
+            <el-button type="text" size="mini" @click="resize">确定</el-button>
+          </span>
+          <span style="margin-left: 100px">
+            <el-button type="text" size="mini" @click="() => append(data)">增加下一步</el-button>
+            <el-button type="text" size="mini" @click="() => remove(node, data)">删除</el-button>
+          </span>
+        </span>
+      </el-tree>
+      <el-button type="text" size="mini" @click="Clog">输出代码</el-button>
+      <el-input type="textarea" :autosize="{ minRows: 20, maxRows: 20}" readonly v-model="svghtml"></el-input>
+    </div>
+  </div>
+</template>
+
+<script>
+const Snap = require(`imports-loader?this=>window,fix=>module.exports=0!snapsvg/dist/snap.svg.js`);
+export default {
+  name: "flow",
+  data() {
+    return {
+      flowData: [
+        {
+          id: "kpi1",
+          name: "线索录入",
+          x: 10,
+          y: 50,
+          children: []
+        },
+        {
+          id: "kpi2",
+          name: "暂存待查",
+          x: 10,
+          y: 200,
+          children: []
+        }
+      ],
+      boxWidth: 95,
+      boxHeight: 95,
+      id: 0,
+      svghtml: "",
+      flowMap: {}
+    };
+  },
+  mounted() {
+    this.creatFlow(this.flowData);
+  },
+  updated() {
+    this.flowMap = {};
+    Snap("#hot").clear();
+    this.creatFlow(this.flowData);
+  },
+  methods: {
+    creatFlow(data) {
+      let boxWidth = this.boxWidth;
+      let boxHeight = this.boxHeight;
+      let span = Snap("#hot");
+      let vm = this;
+      function creatChildren(data) {
+        data.forEach(element => {
+          if (!vm.flowMap[element.id]) {
+            // 创造矩形
+            element.rect = span
+              .rect(element.x, element.y, boxWidth, boxHeight, 10)
+              .attr({
+                fill: "#fff",
+                strokeWidth: 1,
+                stroke: "rgba(37, 135, 238, 0.6)"
+              })
+              .hover(
+                function() {
+                  // 移入
+                  this.attr({
+                    fill: "rgba(37, 135, 238, 0.15)"
+                  });
+                },
+                function() {
+                  // 移出
+                  this.attr({
+                    fill: "#fff"
+                  });
+                }
+              )
+              .drag(function(dx, dy, x, y) {
+                element.x = x - boxWidth / 2;
+                element.y = y - boxHeight - boxHeight / 2;
+                this.attr({
+                  x: element.x,
+                  y: element.y
+                });
+                element.text.attr({
+                  x: element.x + boxWidth / 2,
+                  y: element.y + boxHeight / 2 + 20
+                });
+                element.text2.attr({
+                  x: element.x + boxWidth / 2,
+                  y: element.y + boxHeight / 2
+                });
+                if (element.children) {
+                  element.children.forEach(val => {
+                    val.line && val.line.remove();
+                    val.fatherX = element.x;
+                    val.fatherY = element.y;
+                    val.line = vm.creatLine(element.x, element.y, val.x, val.y);
+                  });
+                }
+                if (element.line) {
+                  element.line && element.line.remove();
+                  element.line = vm.creatLine(
+                    element.fatherX,
+                    element.fatherY,
+                    element.x,
+                    element.y
+                  );
+                }
+              });
+            // 名称
+            element.text = span
+              .text(
+                element.x + boxWidth / 2,
+                element.y + boxHeight / 2 + 20,
+                element.name
+              )
+              .attr({
+                textAnchor: "middle",
+                fontSize: "12px"
+              })
+              .drag(function(dx, dy, x, y) {
+                element.x = x - boxWidth / 2;
+                element.y = y - boxHeight - boxHeight / 2;
+                element.rect.attr({
+                  x: element.x,
+                  y: element.y
+                });
+                this.attr({
+                  x: element.x + boxWidth / 2,
+                  y: element.y + boxHeight / 2 + 20
+                });
+                element.text2.attr({
+                  x: element.x + boxWidth / 2,
+                  y: element.y + boxHeight / 2
+                });
+                if (element.children) {
+                  element.children.forEach(val => {
+                    val.line && val.line.remove();
+                    val.fatherX = element.x;
+                    val.fatherY = element.y;
+                    val.line = vm.creatLine(element.x, element.y, val.x, val.y);
+                  });
+                }
+                if (element.line) {
+                  element.line && element.line.remove();
+                  element.line = vm.creatLine(
+                    element.fatherX,
+                    element.fatherY,
+                    element.x,
+                    element.y
+                  );
+                }
+              });
+            // 条数
+            element.text2 = span
+              .text(element.x + boxWidth / 2, element.y + boxHeight / 2, [
+                "0",
+                " ",
+                "条"
+              ])
+              .attr({
+                textAnchor: "middle",
+                fontSize: "12px"
+              })
+              .drag(function(dx, dy, x, y) {
+                element.x = x - boxWidth / 2;
+                element.y = y - boxHeight - boxHeight / 2;
+                element.rect.attr({
+                  x: element.x,
+                  y: element.y
+                });
+                this.attr({
+                  x: element.x + boxWidth / 2,
+                  y: element.y + boxHeight / 2
+                });
+                element.text.attr({
+                  x: element.x + boxWidth / 2,
+                  y: element.y + boxHeight / 2 + 20
+                });
+                if (element.children) {
+                  element.children.forEach(val => {
+                    val.line && val.line.remove();
+                    val.fatherX = element.x;
+                    val.fatherY = element.y;
+                    val.line = vm.creatLine(element.x, element.y, val.x, val.y);
+                  });
+                }
+                if (element.line) {
+                  element.line && element.line.remove();
+                  element.line = vm.creatLine(
+                    element.fatherX,
+                    element.fatherY,
+                    element.x,
+                    element.y
+                  );
+                }
+              });
+            element.text2.node.childNodes[0].style.fontWeight = "bold";
+            element.text2.node.childNodes[0].style.fontSize = "20px";
+            vm.flowMap[element.id] = element;
+          }
+          // 划线  递归
+          if (element.children) {
+            element.children.forEach(val => {
+              if (!vm.flowMap[val.id]) {
+                val.line && val.line.remove();
+                val.fatherX = element.x;
+                val.fatherY = element.y;
+                val.line = vm.creatLine(element.x, element.y, val.x, val.y);
+              } else {
+                val.line && val.line.remove();
+                val.fatherX = vm.flowMap[val.id].x;
+                val.fatherY = vm.flowMap[val.id].y;
+                val = vm.flowMap[val.id];
+                val.line = vm.creatLine(element.x, element.y, val.x, val.y);
+              }
+            });
+            creatChildren(element.children);
+          }
+        });
+      }
+      creatChildren(data);
+    },
+    creatLine(x, y, x1, y1) {
+      let boxWidth = this.boxWidth;
+      let boxHeight = this.boxHeight;
+      // 添加一个路径
+      let span = Snap("#hot");
+      let path = ``;
+      if (x > x1 + boxWidth) {
+        path = `M ${x},${y + boxHeight / 2} L${x1 +
+          (x - x1 - boxWidth) / 2 +
+          boxWidth},${y + boxHeight / 2} L${x1 +
+          (x - x1 - boxWidth) / 2 +
+          boxWidth},${y1 + boxHeight / 2} L${x1 + boxWidth},${y1 +
+          boxHeight / 2}`;
+      } else if (x1 > x + boxWidth) {
+        path = `M ${x + boxWidth},${y + boxHeight / 2} L${x +
+          (x1 - x - boxWidth) / 2 +
+          boxWidth},${y + boxHeight / 2} L${x +
+          (x1 - x - boxWidth) / 2 +
+          boxWidth},${y1 + boxHeight / 2} L${x1},${y1 + boxHeight / 2}`;
+      } else if (y > y1 + boxHeight / 2) {
+        path = `M ${x + boxWidth / 2},${y} L${x1 + boxWidth / 2},${y1 +
+          boxHeight}`;
+      } else if (y1 > y + boxHeight / 2) {
+        path = `M ${x + boxWidth / 2},${y + boxHeight} L${x1 +
+          boxWidth / 2},${y1}`;
+      }
+      let p2 = span.path(path).attr({
+        // 描边
+        stroke: "#2587ee",
+        strokeWidth: 2,
+        fill: "none",
+        "stroke-dasharray": "5, 5"
+      });
+      let animation = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "animateMotion"
+      );
+      animation.setAttributeNS(null, "id", "temp_" + new Date().getTime());
+      animation.setAttributeNS(null, "path", path);
+      animation.setAttributeNS(null, "rotate", "auto");
+      animation.setAttributeNS(null, "repeatCount", "indefinite");
+      animation.setAttributeNS(null, "begin", "0s");
+      animation.setAttributeNS(null, "dur", "5s");
+      let t = span
+        .path("m-2.23417,2.92186l6.00287,-6.00287l6.00287,6.00287l-12.00575,0z")
+        .attr({
+          fill: "#2587ee",
+          transform:
+            "rotate(89.83505249023438 3.7687072753906254,-0.07957983016967786)",
+          strokeWidth: 0
+        })
+        .append(animation);
+      let g = span.g(p2, t);
+      return g;
+    },
+    append(data) {
+      console.log(data);
+      const newChild = {
+        id: this.id++,
+        name: "未命名",
+        x: data.x + 140,
+        y: data.y,
+        children: []
+      };
+      if (!data.children) {
+        this.$set(data, "children", []);
+      }
+      data.children.push(newChild);
+      this.flowMap = {};
+      Snap("#hot").clear();
+      this.creatFlow(this.flowData);
+    },
+    remove(node, data) {
+      const parent = node.parent;
+      const children = parent.data.children || parent.data;
+      const index = children.findIndex(d => d.id === data.id);
+      children.splice(index, 1);
+      this.flowMap = {};
+      Snap("#hot").clear();
+      this.creatFlow(this.flowData);
+    },
+    resize() {
+      this.flowMap = {};
+      Snap("#hot").clear();
+      this.creatFlow(this.flowData);
+    },
+    Clog() {
+      let span = Snap("#hot");
+      this.svghtml = span.toString();
+    }
+  }
+};
+</script>
+
+<style scoped>
+.about {
+  float: left;
+  height: 100%;
+  width: 50%;
+  background-color: #fff;
+}
+
+.fixed {
+  float: left;
+  height: 100%;
+  width: 50%;
+  text-align: left;
+}
+</style>
