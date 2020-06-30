@@ -95,40 +95,7 @@ export default {
                     fill: "#fff"
                   });
                 }
-              )
-              .drag(function(dx, dy, x, y) {
-                element.x = x - boxWidth / 2;
-                element.y = y - boxHeight - boxHeight / 2;
-                this.attr({
-                  x: element.x,
-                  y: element.y
-                });
-                element.text.attr({
-                  x: element.x + boxWidth / 2,
-                  y: element.y + boxHeight / 2 + 20
-                });
-                element.text2.attr({
-                  x: element.x + boxWidth / 2,
-                  y: element.y + boxHeight / 2
-                });
-                if (element.children) {
-                  element.children.forEach(val => {
-                    val.line && val.line.remove();
-                    val.fatherX = element.x;
-                    val.fatherY = element.y;
-                    val.line = vm.creatLine(element.x, element.y, val.x, val.y);
-                  });
-                }
-                if (element.line) {
-                  element.line && element.line.remove();
-                  element.line = vm.creatLine(
-                    element.fatherX,
-                    element.fatherY,
-                    element.x,
-                    element.y
-                  );
-                }
-              });
+              );
             // 名称
             element.text = span
               .text(
@@ -139,39 +106,6 @@ export default {
               .attr({
                 textAnchor: "middle",
                 fontSize: "12px"
-              })
-              .drag(function(dx, dy, x, y) {
-                element.x = x - boxWidth / 2;
-                element.y = y - boxHeight - boxHeight / 2;
-                element.rect.attr({
-                  x: element.x,
-                  y: element.y
-                });
-                this.attr({
-                  x: element.x + boxWidth / 2,
-                  y: element.y + boxHeight / 2 + 20
-                });
-                element.text2.attr({
-                  x: element.x + boxWidth / 2,
-                  y: element.y + boxHeight / 2
-                });
-                if (element.children) {
-                  element.children.forEach(val => {
-                    val.line && val.line.remove();
-                    val.fatherX = element.x;
-                    val.fatherY = element.y;
-                    val.line = vm.creatLine(element.x, element.y, val.x, val.y);
-                  });
-                }
-                if (element.line) {
-                  element.line && element.line.remove();
-                  element.line = vm.creatLine(
-                    element.fatherX,
-                    element.fatherY,
-                    element.x,
-                    element.y
-                  );
-                }
               });
             // 条数
             element.text2 = span
@@ -183,15 +117,21 @@ export default {
               .attr({
                 textAnchor: "middle",
                 fontSize: "12px"
-              })
+              });
+            element.text2.node.childNodes[0].style.fontWeight = "bold";
+            element.text2.node.childNodes[0].style.fontSize = "20px";
+            vm.flowMap[element.id] = element;
+            span
+              .g(element.rect, element.text, element.text2)
               .drag(function(dx, dy, x, y) {
                 element.x = x - boxWidth / 2;
                 element.y = y - boxHeight - boxHeight / 2;
+                // 控制元素移动
                 element.rect.attr({
                   x: element.x,
                   y: element.y
                 });
-                this.attr({
+                element.text2.attr({
                   x: element.x + boxWidth / 2,
                   y: element.y + boxHeight / 2
                 });
@@ -199,12 +139,32 @@ export default {
                   x: element.x + boxWidth / 2,
                   y: element.y + boxHeight / 2 + 20
                 });
+                // 重新划线
                 if (element.children) {
+                  // 如果有下一步的画线情况
                   element.children.forEach(val => {
-                    val.line && val.line.remove();
-                    val.fatherX = element.x;
-                    val.fatherY = element.y;
-                    val.line = vm.creatLine(element.x, element.y, val.x, val.y);
+                    if (!vm.flowMap[val.id]) {
+                      val.line && val.line.remove();
+                      val.fatherX = element.x;
+                      val.fatherY = element.y;
+                      val.line = vm.creatLine(
+                        element.x,
+                        element.y,
+                        val.x,
+                        val.y
+                      );
+                    } else {
+                      val.line && val.line.remove();
+                      val.fatherX = vm.flowMap[val.id].x;
+                      val.fatherY = vm.flowMap[val.id].y;
+                      val = vm.flowMap[val.id];
+                      val.line = vm.creatLine(
+                        element.x,
+                        element.y,
+                        val.x,
+                        val.y
+                      );
+                    }
                   });
                 }
                 if (element.line) {
@@ -217,9 +177,6 @@ export default {
                   );
                 }
               });
-            element.text2.node.childNodes[0].style.fontWeight = "bold";
-            element.text2.node.childNodes[0].style.fontSize = "20px";
-            vm.flowMap[element.id] = element;
           }
           // 划线  递归
           if (element.children) {
