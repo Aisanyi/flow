@@ -37,17 +37,21 @@ export default {
       flowData: [
         {
           id: "kpi1",
-          name: "线索录入",
+          name: "未命名",
           x: 10,
           y: 50,
-          children: []
+          children: [],
+          line: {},
+          father: {}
         },
         {
           id: "kpi2",
-          name: "暂存待查",
+          name: "未命名",
           x: 10,
           y: 200,
-          children: []
+          children: [],
+          line: {},
+          father: {}
         }
       ],
       boxWidth: 95,
@@ -120,7 +124,6 @@ export default {
               });
             element.text2.node.childNodes[0].style.fontWeight = "bold";
             element.text2.node.childNodes[0].style.fontSize = "20px";
-            vm.flowMap[element.id] = element;
             span
               .g(element.rect, element.text, element.text2)
               .drag(function(dx, dy, x, y) {
@@ -140,58 +143,66 @@ export default {
                   y: element.y + boxHeight / 2 + 20
                 });
                 // 重新划线
-                if (element.children) {
-                  // 如果有下一步的画线情况
-                  element.children.forEach(val => {
-                    if (!vm.flowMap[val.id]) {
-                      val.line && val.line.remove();
-                      val.fatherX = element.x;
-                      val.fatherY = element.y;
-                      val.line = vm.creatLine(
-                        element.x,
-                        element.y,
-                        val.x,
-                        val.y
-                      );
-                    } else {
-                      val.line && val.line.remove();
-                      val.fatherX = vm.flowMap[val.id].x;
-                      val.fatherY = vm.flowMap[val.id].y;
-                      val = vm.flowMap[val.id];
-                      val.line = vm.creatLine(
-                        element.x,
-                        element.y,
-                        val.x,
-                        val.y
-                      );
+                // 如果有下一步的画线情况
+                element.children.forEach(val => {
+                  // 清空
+                  if (vm.flowMap[val.id]) {
+                    vm.flowMap[val.id].line[element.id].remove()
+                    vm.flowMap[val.id].line[element.id] = vm.creatLine(
+                      element.x,
+                      element.y,
+                      vm.flowMap[val.id].x,
+                      vm.flowMap[val.id].y
+                    );
+                    vm.flowMap[val.id].father[element.id] = {
+                      fatherX: element.x,
+                      fatherY: element.y
                     }
-                  });
-                }
-                if (element.line) {
-                  element.line && element.line.remove();
-                  element.line = vm.creatLine(
-                    element.fatherX,
-                    element.fatherY,
+                  } else {
+                    val.line[element.id].remove()
+                    val.line[element.id] = vm.creatLine(
+                      element.x,
+                      element.y,
+                      val.x,
+                      val.y
+                    );
+                    val.father[element.id] = {
+                      fatherX: element.x,
+                      fatherY: element.y
+                    }
+                  }    
+                });
+                // 给上一步画线
+                for (const key in element.line) {
+                  element.line[key].remove()
+                  element.line[key] = vm.creatLine(
+                    element.father[key].fatherX,
+                    element.father[key].fatherY,
                     element.x,
                     element.y
                   );
                 }
               });
+              vm.flowMap[element.id] = element;
           }
           // 划线  递归
           if (element.children) {
-            element.children.forEach(val => {
+            element.children.forEach((val) => {
               if (!vm.flowMap[val.id]) {
-                val.line && val.line.remove();
-                val.fatherX = element.x;
-                val.fatherY = element.y;
-                val.line = vm.creatLine(element.x, element.y, val.x, val.y);
+                // 如果指定的节点不存在
+                val.father[element.id] = {
+                  fatherX: element.x,
+                  fatherY: element.y
+                }
+                val.line[element.id] = vm.creatLine(element.x, element.y, val.x, val.y);
               } else {
-                val.line && val.line.remove();
-                val.fatherX = vm.flowMap[val.id].x;
-                val.fatherY = vm.flowMap[val.id].y;
+                // 如果指定的节点存在
                 val = vm.flowMap[val.id];
-                val.line = vm.creatLine(element.x, element.y, val.x, val.y);
+                val.father[element.id] = {
+                  fatherX: element.x,
+                  fatherY: element.y
+                };
+                val.line[element.id] = vm.creatLine(element.x, element.y, vm.flowMap[val.id].x, vm.flowMap[val.id].y);
               }
             });
             creatChildren(element.children);
@@ -199,6 +210,7 @@ export default {
         });
       }
       creatChildren(data);
+      console.log(data)
     },
     creatLine(x, y, x1, y1) {
       let boxWidth = this.boxWidth;
@@ -256,13 +268,14 @@ export default {
       return g;
     },
     append(data) {
-      console.log(data);
       const newChild = {
         id: this.id++,
         name: "未命名",
         x: data.x + 140,
         y: data.y,
-        children: []
+        children: [],
+        line: {},
+        father: {}
       };
       if (!data.children) {
         this.$set(data, "children", []);
