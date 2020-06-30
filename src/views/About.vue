@@ -8,6 +8,7 @@
       <input type="text" v-model="boxWidth" />
       <br />盒子高：
       <input type="text" v-model="boxHeight" />
+      <el-button type="text" size="mini" @click="add">增加一个顶级</el-button>
       <el-tree :data="flowData" node-key="id" default-expand-all :expand-on-click-node="false">
         <span class="custom-tree-node" slot-scope="{ node, data }">
           <span>
@@ -147,7 +148,7 @@ export default {
                 element.children.forEach(val => {
                   // 清空
                   if (vm.flowMap[val.id]) {
-                    vm.flowMap[val.id].line[element.id].remove()
+                    vm.flowMap[val.id].line[element.id].remove();
                     vm.flowMap[val.id].line[element.id] = vm.creatLine(
                       element.x,
                       element.y,
@@ -157,9 +158,9 @@ export default {
                     vm.flowMap[val.id].father[element.id] = {
                       fatherX: element.x,
                       fatherY: element.y
-                    }
+                    };
                   } else {
-                    val.line[element.id].remove()
+                    val.line[element.id].remove();
                     val.line[element.id] = vm.creatLine(
                       element.x,
                       element.y,
@@ -169,12 +170,12 @@ export default {
                     val.father[element.id] = {
                       fatherX: element.x,
                       fatherY: element.y
-                    }
-                  }    
+                    };
+                  }
                 });
                 // 给上一步画线
                 for (const key in element.line) {
-                  element.line[key].remove()
+                  element.line[key].remove();
                   element.line[key] = vm.creatLine(
                     element.father[key].fatherX,
                     element.father[key].fatherY,
@@ -183,18 +184,23 @@ export default {
                   );
                 }
               });
-              vm.flowMap[element.id] = element;
+            vm.flowMap[element.id] = element;
           }
           // 划线  递归
           if (element.children) {
-            element.children.forEach((val) => {
+            element.children.forEach(val => {
               if (!vm.flowMap[val.id]) {
                 // 如果指定的节点不存在
                 val.father[element.id] = {
                   fatherX: element.x,
                   fatherY: element.y
-                }
-                val.line[element.id] = vm.creatLine(element.x, element.y, val.x, val.y);
+                };
+                val.line[element.id] = vm.creatLine(
+                  element.x,
+                  element.y,
+                  val.x,
+                  val.y
+                );
               } else {
                 // 如果指定的节点存在
                 val = vm.flowMap[val.id];
@@ -202,7 +208,12 @@ export default {
                   fatherX: element.x,
                   fatherY: element.y
                 };
-                val.line[element.id] = vm.creatLine(element.x, element.y, vm.flowMap[val.id].x, vm.flowMap[val.id].y);
+                val.line[element.id] = vm.creatLine(
+                  element.x,
+                  element.y,
+                  vm.flowMap[val.id].x,
+                  vm.flowMap[val.id].y
+                );
               }
             });
             creatChildren(element.children);
@@ -210,7 +221,17 @@ export default {
         });
       }
       creatChildren(data);
-      console.log(data)
+    },
+    add() {
+      this.flowData.push({
+        id: this.id++,
+        name: "未命名",
+        x: 0,
+        y: 0,
+        children: [],
+        line: {},
+        father: {}
+      });
     },
     creatLine(x, y, x1, y1) {
       let boxWidth = this.boxWidth;
@@ -292,6 +313,7 @@ export default {
       children.splice(index, 1);
       this.flowMap = {};
       Snap("#hot").clear();
+      delete this.flowMap[data.id];
       this.creatFlow(this.flowData);
     },
     resize() {
@@ -320,5 +342,9 @@ export default {
   height: 100%;
   width: 50%;
   text-align: left;
+}
+
+.input {
+  margin: 10px 0;
 }
 </style>
