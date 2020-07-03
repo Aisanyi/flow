@@ -129,7 +129,7 @@ export default {
               .g(element.rect, element.text, element.text2)
               .drag(function(dx, dy, x, y) {
                 element.x = x - boxWidth / 2;
-                element.y = y - boxHeight - boxHeight / 2;
+                element.y = y - boxHeight / 2;
                 // 控制元素移动
                 element.rect.attr({
                   x: element.x,
